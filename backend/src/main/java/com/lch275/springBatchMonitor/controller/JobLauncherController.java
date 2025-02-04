@@ -1,5 +1,6 @@
 package com.lch275.springBatchMonitor.controller;
 
+import com.lch275.springBatchMonitor.service.RedisService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
@@ -29,15 +30,17 @@ public class JobLauncherController {
 
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
+    private final RedisService redisService;
 
     @PostMapping("/{jobName}")
     public ResponseEntity<?> lanchJob(@PathVariable String jobName, @RequestBody Map<String, Object> params) {
         try {
             Map<String, Object> res = new HashMap<>();
+            if(!redisService.acquireLock(jobName)) throw new JobExecutionAlreadyRunningException("acquire lock fail");
             Job job = jobRegistry.getJob(jobName);
             JobParameters jobParameters = createJobParameters(params);
             JobExecution jobExecution = jobLauncher.run(job, jobParameters);
-
+            redisService.releaseLock(jobName);
             res.put("id", jobExecution.getJobId());
             res.put("status", jobExecution.getStatus().toString());
             return ResponseEntity.ok(res);
