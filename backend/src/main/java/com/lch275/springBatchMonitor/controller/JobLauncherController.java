@@ -5,10 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.batch.core.launch.NoSuchJobException;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.lch275.springBatchMonitor.util.BatchUtil.createJobParameters;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/job")
@@ -30,6 +32,7 @@ public class JobLauncherController {
 
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
+    private final JobOperator jobOperator;
     private final RedisService redisService;
 
     @PostMapping("/{jobName}")
@@ -48,19 +51,5 @@ public class JobLauncherController {
                 JobParametersInvalidException | JobRestartException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private JobParameters createJobParameters(Map<String, Object> params) {
-        JobParametersBuilder builder = new JobParametersBuilder();
-        params.forEach((key, value) -> {
-            if (value instanceof String) {
-                builder.addString(key, (String) value);
-            } else if (value instanceof Long) {
-                builder.addLong(key, (Long) value);
-            } else if (value instanceof Double) {
-                builder.addDouble(key, (Double) value);
-            }
-        });
-        return builder.toJobParameters();
     }
 }
